@@ -44,20 +44,44 @@ function RecommendedMenu({ selected, onSelect, onSubmit, submitted, onBack }) {
     "플레인 + 요거트 아이스크림 + 사과잼",
   ];
 
+  // ✅ 요청사항 자동 생성 함수
   const generateInitialNotes = (item) => {
     const newNote = {};
-    if (item.includes("누텔라")) {
-      newNote["초코칩 추가해주세요"] = false;
+
+    const hasNutella = item.includes("누텔라");
+    const hasCream =
+      item.includes("생크림") ||
+      item.includes("요거트 생크림") ||
+      item.includes("아이스크림") ||
+      item.includes("딸기 아이스크림") ||
+      item.includes("초코 아이스크림");
+
+    if (item.includes("카카오")) {
+      newNote["초코칩 빼주세요"] = false;
+    }
+
+    if (item.includes("크런치")) {
+      newNote["땅콩 크런치 빼주세요"] = false;
+    }
+
+    if (hasNutella) {
+      // ✅ 초코칩 추가는 메인 토핑이 있는 경우에만
+      if (hasCream) {
+        newNote["초코칩 추가해주세요"] = false;
+      }
       newNote["초코시럽 빼주세요"] = false;
     }
+
     if (item.includes("생크림") || item.includes("요거트 생크림")) {
       newNote["생크림 많이 (4덩이)"] = false;
       newNote["생크림 적게 (2덩이)"] = false;
       newNote["생크림 아주 적게 (한 면에 펴서)"] = false;
     }
+
     if (item.includes("잼")) {
       newNote["잼 조금만 뿌려주세요"] = false;
     }
+
     return newNote;
   };
 
@@ -68,7 +92,7 @@ function RecommendedMenu({ selected, onSelect, onSubmit, submitted, onBack }) {
   };
 
   const handleSubmit = () => {
-    onSubmit(); // 상태 유지
+    onSubmit(); // 상태 그대로 제출
   };
 
   return (
@@ -168,7 +192,6 @@ export function WaffleCustomizer({ onBack }) {
   const [finalNote, setFinalNote] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
-  // ✅ 요청사항 자동 생성 및 유지
   useEffect(() => {
     const newNote = {};
     const spreads = Object.keys(step1_1);
@@ -176,32 +199,52 @@ export function WaffleCustomizer({ onBack }) {
     const creams = Object.keys(step2).filter((k) =>
       ["생크림", "요거트 생크림"].includes(k)
     );
+    const hasTopping = Object.keys(step2).length > 0; // ✅ 메인 토핑 1개 이상 선택
     const hasJam = Object.keys(step3).length > 0;
 
+    // ✅ 카카오 빵 → 초코칩 빼주세요
+    if (step1 === "카카오") {
+      newNote["초코칩 빼주세요"] = finalNote["초코칩 빼주세요"] || false;
+    }
+
+    // ✅ 크런치 빵 → 땅콩 크런치 빼주세요
+    if (step1 === "크런치") {
+      newNote["땅콩 크런치 빼주세요"] =
+        finalNote["땅콩 크런치 빼주세요"] || false;
+    }
+
+    // ✅ 누텔라 선택 시 (단, 메인 토핑 있을 때만 초코칩 추가)
     if (hasNutella) {
-      newNote["초코칩 추가해주세요"] =
-        finalNote["초코칩 추가해주세요"] || false;
+      if (hasTopping) {
+        newNote["초코칩 추가해주세요"] =
+          finalNote["초코칩 추가해주세요"] || false;
+      }
       newNote["초코시럽 빼주세요"] = finalNote["초코시럽 빼주세요"] || false;
     }
+
+    // ✅ 생크림 선택 시
     if (creams.length > 0) {
       newNote["생크림 많이 (4덩이)"] =
         finalNote["생크림 많이 (4덩이)"] || false;
       newNote["생크림 적게 (2덩이)"] =
         finalNote["생크림 적게 (2덩이)"] || false;
-      newNote["생크림 아주 적게 (한 면에 펴서)"] =
-        finalNote["생크림 아주 적게 (한 면에 펴서)"] || false;
+      newNote["생크림 아주 적게 (한 면에 펴서 or 한덩이)"] =
+        finalNote["생크림 아주 적게 (한 면에 펴서 or 한덩이)"] || false;
     }
+
+    // ✅ 잼 선택 시
     if (hasJam) {
       newNote["잼 조금만 뿌려주세요"] =
         finalNote["잼 조금만 뿌려주세요"] || false;
     }
 
+    // ✅ 기타 유지
     if (finalNote["기타"]) {
       newNote["기타"] = finalNote["기타"];
     }
 
     setFinalNote(newNote);
-  }, [step1_1, step2, step3]);
+  }, [step1, step1_1, step2, step3]);
 
   const getTotalCount = (obj) => Object.values(obj).reduce((a, b) => a + b, 0);
 
@@ -384,7 +427,7 @@ export function WaffleCustomizer({ onBack }) {
         </div>
       </div>
 
-      {/* Submit + Summary */}
+      {/* 제출 */}
       <div className="text-center space-x-2">
         <Button variant="outline" onClick={onBack}>
           ← 돌아가기
@@ -392,6 +435,7 @@ export function WaffleCustomizer({ onBack }) {
         <Button onClick={handleSubmit}>주문하기</Button>
       </div>
 
+      {/* 주문표 */}
       {submitted && (
         <div className="mt-6 p-4 border rounded bg-gray-50">
           <h2 className="text-lg font-bold mb-2">🧾 주문표</h2>
